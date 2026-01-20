@@ -2,6 +2,11 @@ name: Build and Publish Docker Images
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (leave empty to use VERSION file)'
+        required: false
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -18,6 +23,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -38,8 +52,8 @@ jobs:
         with:
           images: ${{ env.BACKEND_IMAGE }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
 
       - name: Extract metadata for frontend
         id: meta-frontend
@@ -47,8 +61,8 @@ jobs:
         with:
           images: ${{ env.FRONTEND_IMAGE }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
