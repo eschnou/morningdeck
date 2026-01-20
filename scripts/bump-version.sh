@@ -13,9 +13,9 @@ else
     NEW_VERSION="$1"
 fi
 
-# Validate version format (basic semver)
-if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Error: Version must be in format X.Y.Z (e.g., 1.0.0)"
+# Validate version format (semver with optional suffix like -SNAPSHOT)
+if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?$ ]]; then
+    echo "Error: Version must be in format X.Y.Z or X.Y.Z-SUFFIX (e.g., 1.0.0, 1.1.0-SNAPSHOT)"
     exit 1
 fi
 
