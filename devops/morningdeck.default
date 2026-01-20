@@ -1,0 +1,25 @@
+# OpenAI API Key
+OPENAI_API_KEY=sk-***
+
+# The following is required if OpenGPA is behind a proxy/alb serving https
+SERVER_FORWARDHEADERSSTRATEGY=native
+
+# Domains
+APP_DOMAIN=morningdeck.com
+APP_URL=https://morningdeck.com
+
+# Database
+DB_HOST=localhost
+DB_NAME=morningdeck
+DB_USERNAME=morningdeck
+DB_PASSWORD=changeme
+
+# AWS
+EMAIL_DOMAIN=inbound.morningdeck.com
+EMAIL_SQS_QUEUE_NAME=morningdeck-prod-email-inbox
+EMAIL_S3_BUCKET_NAME=morningdeck-prod-email
+REDDIT_CLIENT_ID=client_id
+REDDIT_CLIENT_SECRET=secret
+
+
+

@@ -1,0 +1,61 @@
+# Morning Deck - Quick Start
+#
+# Usage:
+#   curl -O https://raw.githubusercontent.com/eschnou/morningdeck/main/docker-compose.quickstart.yml
+#   echo "OPENAI_API_KEY=your-key-here" > .env
+#   docker compose -f docker-compose.quickstart.yml up -d
+#
+# Then visit http://localhost:8080
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: morningdeck
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/eschnou/morningdeck-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: morningdeck
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      APP_DOMAIN: localhost:8080
+      APP_URL: http://localhost:8080
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Please set OPENAI_API_KEY in .env file}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
+      OPENAI_MODEL_LITE: ${OPENAI_MODEL_LITE:-gpt-4o-mini}
+      OPENAI_MODEL_HEAVY: ${OPENAI_MODEL_HEAVY:-gpt-4o}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+
+  frontend:
+    image: ghcr.io/eschnou/morningdeck-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_data:

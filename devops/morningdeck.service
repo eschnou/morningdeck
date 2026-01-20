@@ -1,0 +1,39 @@
+[Unit]
+Description=Morningdeck Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=-/etc/default/morningdeck
+User=ubuntu
+Group=ubuntu
+Type=simple
+Restart=always
+RestartSec=2
+ExecStart=/home/ubuntu/morningdeck/devops/morningdeck.sh
+WorkingDirectory=/home/ubuntu/morningdeck
+
+# Increase the default file descriptor limit
+LimitNOFILE=32768
+
+# Security
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+DevicePolicy=closed
+ProtectSystem=no
+ReadWritePaths=/home/ubuntu/morningdeck/logs/
+ProtectHome=no
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=no
+LockPersonality=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

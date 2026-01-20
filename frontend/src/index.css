@@ -1,0 +1,342 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base colors - Notion-style warm whites */
+    --background: 40 20% 99%;
+    --foreground: 24 10% 10%;
+
+    /* Primary - dark gray (Notion-style monochrome) */
+    --primary: 24 10% 15%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 24 10% 25%;
+
+    /* Accent - also monochrome */
+    --accent: 24 10% 20%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 24 10% 30%;
+
+    /* Secondary colors - warm light gray */
+    --secondary: 40 10% 96%;
+    --secondary-foreground: 24 10% 20%;
+
+    /* Muted colors for subtle backgrounds */
+    --muted: 40 10% 95%;
+    --muted-foreground: 24 6% 45%;
+
+    /* Card and surface colors */
+    --card: 40 20% 99%;
+    --card-foreground: 24 10% 10%;
+
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 10% 10%;
+
+    /* Destructive colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border and input colors - subtle warm gray */
+    --border: 24 6% 90%;
+    --input: 24 6% 90%;
+    --ring: 24 10% 30%;
+
+    /* Gradients - monochrome */
+    --gradient-primary: linear-gradient(135deg, hsl(24 10% 15%) 0%, hsl(24 10% 20%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(24 10% 20%) 0%, hsl(24 10% 25%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(40 20% 99%) 0%, hsl(40 10% 97%) 100%);
+
+    /* Shadows - softer */
+    --shadow-sm: 0 1px 2px 0 hsl(24 10% 0% / 0.04);
+    --shadow-md: 0 4px 6px -1px hsl(24 10% 0% / 0.08);
+    --shadow-lg: 0 10px 15px -3px hsl(24 10% 0% / 0.08);
+    --shadow-xl: 0 20px 25px -5px hsl(24 10% 0% / 0.08);
+
+    /* Transitions */
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.5rem;
+
+    /* Sidebar - warm gray */
+    --sidebar-background: 40 10% 97%;
+    --sidebar-foreground: 24 10% 30%;
+    --sidebar-primary: 24 10% 15%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 40 8% 93%;
+    --sidebar-accent-foreground: 24 10% 15%;
+    --sidebar-border: 24 6% 90%;
+    --sidebar-ring: 24 10% 30%;
+  }
+
+  .dark {
+    /* Dark mode - monochrome with warm undertones */
+    --background: 24 8% 10%;
+    --foreground: 40 10% 95%;
+
+    --primary: 40 10% 90%;
+    --primary-foreground: 24 10% 10%;
+    --primary-hover: 40 10% 80%;
+
+    --accent: 40 8% 85%;
+    --accent-foreground: 24 10% 10%;
+    --accent-hover: 40 8% 75%;
+
+    --secondary: 24 8% 16%;
+    --secondary-foreground: 40 10% 90%;
+
+    --muted: 24 8% 16%;
+    --muted-foreground: 40 6% 55%;
+
+    --card: 24 8% 12%;
+    --card-foreground: 40 10% 95%;
+
+    --popover: 24 8% 12%;
+    --popover-foreground: 40 10% 95%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 24 8% 20%;
+    --input: 24 8% 20%;
+    --ring: 40 10% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(40 10% 90%) 0%, hsl(40 10% 80%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(40 8% 85%) 0%, hsl(40 8% 75%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(24 8% 10%) 0%, hsl(24 8% 12%) 100%);
+
+    --sidebar-background: 24 8% 8%;
+    --sidebar-foreground: 40 10% 90%;
+    --sidebar-primary: 40 10% 90%;
+    --sidebar-primary-foreground: 24 10% 10%;
+    --sidebar-accent: 24 8% 15%;
+    --sidebar-accent-foreground: 40 10% 90%;
+    --sidebar-border: 24 8% 18%;
+    --sidebar-ring: 40 10% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/*
+ * Landing Page Design System
+ * Scoped to .landing-page - Modern SaaS style (Linear/Notion/GitHub)
+ */
+.landing-page {
+  /* Modern cool palette - clean and minimal */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 222 47% 11%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 46%;
+  --accent: 250 100% 65%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 250 100% 65%;
+  --radius: 0.75rem;
+
+  /* Custom landing page tokens - modern SaaS */
+  --headline: 222 47% 11%;
+  --surface: 220 14% 98%;
+  --surface-elevated: 0 0% 100%;
+  --ink: 222 47% 11%;
+  --ink-light: 220 9% 46%;
+  --accent-primary: 250 100% 65%;
+  --accent-secondary: 280 100% 70%;
+  --accent-glow: 250 100% 75%;
+  --gradient-start: 250 100% 65%;
+  --gradient-end: 280 100% 70%;
+  --rule: 220 13% 91%;
+}
+
+@layer components {
+  /* Landing page component classes - Modern SaaS style */
+  .landing-page .section-divider {
+    @apply w-full h-px;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+  }
+
+  .landing-page .gradient-line {
+    @apply w-full h-[2px];
+    background: linear-gradient(90deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .landing-page .nav-link {
+    @apply relative text-sm font-medium transition-colors duration-200;
+    color: hsl(var(--ink-light));
+  }
+
+  .landing-page .nav-link:hover {
+    color: hsl(var(--ink));
+  }
+
+  .landing-page .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+    background: linear-gradient(135deg, hsl(var(--gradient-start) / 0.1), hsl(var(--gradient-end) / 0.1));
+    color: hsl(var(--accent));
+    border: 1px solid hsl(var(--accent) / 0.2);
+  }
+
+  .landing-page .section-label {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider;
+    background: hsl(var(--secondary));
+    color: hsl(var(--ink-light));
+  }
+
+  .landing-page .quote-modern {
+    @apply text-xl md:text-2xl font-medium leading-relaxed;
+    color: hsl(var(--ink-light));
+  }
+
+  .landing-page .section-header {
+    @apply text-xs uppercase tracking-[0.15em] font-semibold;
+    color: hsl(var(--accent));
+  }
+
+  .landing-page .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg;
+  }
+
+  .landing-page .surface-card {
+    @apply bg-white border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300;
+  }
+
+  .landing-page .btn-primary {
+    @apply font-medium px-6 py-3 rounded-lg transition-all duration-300;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    color: white;
+  }
+
+  .landing-page .btn-primary:hover {
+    @apply shadow-lg -translate-y-0.5;
+    box-shadow: 0 20px 40px -10px hsl(var(--accent) / 0.4);
+  }
+
+  .landing-page .btn-secondary {
+    @apply border-2 font-medium px-6 py-3 rounded-lg transition-all duration-300;
+    border-color: hsl(var(--border));
+    color: hsl(var(--ink));
+    background: transparent;
+  }
+
+  .landing-page .btn-secondary:hover {
+    background: hsl(var(--secondary));
+    border-color: hsl(var(--secondary));
+  }
+
+  /* Gradient text effect */
+  .landing-page .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@layer utilities {
+  .landing-page .bg-surface {
+    background-color: hsl(var(--surface));
+  }
+
+  .landing-page .bg-surface-elevated {
+    background-color: hsl(var(--surface-elevated));
+  }
+
+  .landing-page .text-ink {
+    color: hsl(var(--ink));
+  }
+
+  .landing-page .text-ink-light {
+    color: hsl(var(--ink-light));
+  }
+
+  .landing-page .text-headline {
+    color: hsl(var(--headline));
+  }
+
+  .landing-page .bg-ink {
+    background-color: hsl(var(--ink));
+  }
+
+  .landing-page .bg-accent {
+    background-color: hsl(var(--accent));
+  }
+
+  .landing-page .text-accent {
+    color: hsl(var(--accent));
+  }
+
+  .landing-page .text-accent-glow {
+    color: hsl(var(--accent-glow));
+  }
+
+  .landing-page .bg-accent-glow {
+    background-color: hsl(var(--accent-glow));
+  }
+
+  .landing-page .bg-rule {
+    background-color: hsl(var(--rule));
+  }
+
+  .landing-page .border-rule {
+    border-color: hsl(var(--rule));
+  }
+
+  .landing-page .border-accent {
+    border-color: hsl(var(--accent));
+  }
+
+  .landing-page .shadow-accent {
+    --tw-shadow-color: hsl(var(--accent));
+  }
+
+  /* Mesh gradient background */
+  .landing-page .mesh-gradient {
+    background:
+      radial-gradient(at 40% 20%, hsl(var(--gradient-start) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(var(--gradient-end) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsl(var(--gradient-start) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, hsl(var(--gradient-end) / 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(var(--gradient-start) / 0.1) 0px, transparent 50%),
+      hsl(var(--background));
+  }
+
+  /* Subtle grid pattern */
+  .landing-page .grid-pattern {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Dot pattern */
+  .landing-page .dot-pattern {
+    background-image: radial-gradient(hsl(var(--border)) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}

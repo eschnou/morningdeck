@@ -1,0 +1,9 @@
+export { default as Header } from "./Header";
+export { default as Hero } from "./Hero";
+export { default as ProblemSection } from "./ProblemSection";
+export { default as SourcesSection } from "./SourcesSection";
+export { default as FeaturesSection } from "./FeaturesSection";
+export { default as ProductPreview } from "./ProductPreview";
+export { default as PricingSection } from "./PricingSection";
+export { default as CTASection } from "./CTASection";
+export { default as Footer } from "./Footer";

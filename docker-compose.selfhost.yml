@@ -1,0 +1,125 @@
+# Morning Deck - Self-Hosted Docker Compose
+#
+# Quick start:
+#   1. Copy .env.selfhost.example to .env and configure your settings
+#   2. Run: docker compose -f docker-compose.selfhost.yml up -d
+#   3. Access the app at http://localhost:8080
+#
+# To build images locally instead of using pre-built ones:
+#   docker compose -f docker-compose.selfhost.yml build
+#
+# For production deployments, consider:
+#   - Using a reverse proxy (Traefik, Caddy, nginx) for SSL/TLS
+#   - Setting up proper backup for the PostgreSQL volume
+#   - Configuring resource limits based on your server capacity
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: morningdeck_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-morningdeck}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - morningdeck
+
+  # Spring Boot Backend
+  backend:
+    image: ghcr.io/eschnou/morningdeck-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: morningdeck_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-morningdeck}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+
+      # Application URLs
+      APP_DOMAIN: ${APP_DOMAIN:-localhost:8080}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+
+      # OpenAI / LLM Configuration
+      # Supports OpenAI, OpenRouter, Ollama, or any OpenAI-compatible API
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your-api-key-here}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
+      OPENAI_MODEL_LITE: ${OPENAI_MODEL_LITE:-gpt-4o-mini}
+      OPENAI_MODEL_HEAVY: ${OPENAI_MODEL_HEAVY:-gpt-4o}
+
+      # Optional: Meilisearch (search feature)
+      MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-false}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-}
+
+      # Optional: Reddit API (for Reddit feed sources)
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
+
+      # JVM Configuration
+      JAVA_OPTS: ${JAVA_OPTS:--XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0}
+    volumes:
+      - backend_files:/app/files
+      - backend_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+    networks:
+      - morningdeck
+
+  # React Frontend (nginx)
+  frontend:
+    image: ghcr.io/eschnou/morningdeck-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_APP_NAME: ${APP_NAME:-Morning Deck}
+        VITE_REQUIRE_INVITE_CODE: "false"
+    container_name: morningdeck_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    networks:
+      - morningdeck
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_files:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  morningdeck:
+    driver: bridge
