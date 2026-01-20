@@ -10,7 +10,7 @@
     </parent>
     <groupId>be.transcode</groupId>
     <artifactId>morningdeck-server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>Backend for Morningdeck</name>
     <description>Morningdeck is an AI driven news aggregator and dispatcher.</description>
     <url/>
