@@ -1,9 +1,6 @@
 name: Build and Publish Docker Images
 
 on:
-  push:
-    branches: [main]
-  # Allow manual trigger
   workflow_dispatch:
 
 env:
