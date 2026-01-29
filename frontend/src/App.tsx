@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ConfigProvider, useConfig } from "@/contexts/ConfigContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -75,15 +76,16 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
             </Route>
 
-            {/* Admin route with its own layout */}
+            {/* Admin route with admin sidebar layout */}
             <Route
-              path="/admin"
               element={
                 <ProtectedRoute requireAdmin>
-                  <Admin />
+                  <AdminLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route path="/admin" element={<Admin />} />
+            </Route>
 
             {/* Redirect legacy routes to briefs */}
             <Route path="/dashboard" element={<Navigate to="/briefs" replace />} />

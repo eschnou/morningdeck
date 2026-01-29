@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,7 @@ const redditSchema = z.object({
 });
 
 export function AddSourceDialog({ open, onOpenChange, briefingId, onSuccess }: AddSourceDialogProps) {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [sourceType, setSourceType] = useState<SourceType>('RSS');
   const [formData, setFormData] = useState({
@@ -112,17 +114,15 @@ export function AddSourceDialog({ open, onOpenChange, briefingId, onSuccess }: A
 
       toast({
         title: 'Source added',
-        description: sourceType === 'EMAIL'
-          ? `Email source created. Address: ${source.emailAddress}`
-          : sourceType === 'REDDIT'
-            ? `Reddit source created for r/${formData.subreddit}`
-            : `Successfully added "${source.name}"`,
+        description: `Successfully added "${source.name}"`,
       });
 
       setFormData({ url: '', name: '', tags: '', extractionPrompt: '', subreddit: '' });
       setSourceType('RSS');
       onOpenChange(false);
-      onSuccess?.(source);
+
+      // Redirect to source detail page
+      navigate(`/sources/${source.id}`);
     } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};

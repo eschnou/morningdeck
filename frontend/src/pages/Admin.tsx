@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navbar } from '@/components/Navbar';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,10 +31,14 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import {
-  Users,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   Search,
   MoreVertical,
-  Shield,
   Mail,
   Key,
   CreditCard,
@@ -52,10 +56,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-type AdminArea = 'users';
-
 export default function Admin() {
-  const [activeArea, setActiveArea] = useState<AdminArea>('users');
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +64,7 @@ export default function Admin() {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   // Dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -104,6 +106,7 @@ export default function Admin() {
     try {
       const user = await apiClient.getAdminUserDetail(userId);
       setSelectedUser(user);
+      setMobileDetailOpen(true);
     } catch (error: unknown) {
       toast({
         title: 'Error loading user details',
@@ -259,32 +262,191 @@ export default function Admin() {
       .slice(0, 2);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navbar />
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* Left Sidebar - Admin Areas */}
-        <div className="w-64 border-r bg-card p-4">
-          <div className="flex items-center gap-2 mb-6">
-            <Shield className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Admin Panel</h2>
-          </div>
-          <nav className="space-y-1">
-            <Button
-              variant={activeArea === 'users' ? 'secondary' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveArea('users')}
-            >
-              <Users className="mr-2 h-4 w-4" />
-              User Management
-            </Button>
-          </nav>
+  // Reusable user details content
+  const renderUserDetails = () => {
+    if (isLoadingDetail) {
+      return (
+        <div className="flex items-center justify-center h-full min-h-[200px]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      );
+    }
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-row">
-          {/* Left - User List */}
-          <div className="w-96 border-r p-4 overflow-hidden flex flex-col">
+    if (!selectedUser) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          Select a user to view details
+        </div>
+      );
+    }
+
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={selectedUser.avatarUrl} />
+                <AvatarFallback>
+                  {getInitials(selectedUser.name || selectedUser.username)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-lg">{selectedUser.name}</CardTitle>
+                <div className="text-sm text-muted-foreground">
+                  @{selectedUser.username}
+                </div>
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleToggleEnabled}>
+                  {selectedUser.enabled ? (
+                    <>
+                      <UserX className="mr-2 h-4 w-4" />
+                      Disable User
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      Enable User
+                    </>
+                  )}
+                </DropdownMenuItem>
+                {!selectedUser.emailVerified && (
+                  <DropdownMenuItem onClick={handleVerifyEmail}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Verify Email
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Change Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
+                  <Key className="mr-2 h-4 w-4" />
+                  Reset Password
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    setNewPlan((selectedUser.subscription?.plan as 'FREE' | 'PRO' | 'BUSINESS') || 'FREE');
+                    setShowSubscriptionDialog(true);
+                  }}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Change Subscription
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowCreditsDialog(true)}>
+                  <Coins className="mr-2 h-4 w-4" />
+                  Adjust Credits
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Email</Label>
+              <div className="text-sm flex items-center gap-2 flex-wrap">
+                <span className="break-all">{selectedUser.email}</span>
+                {selectedUser.emailVerified ? (
+                  <Badge variant="outline" className="text-xs">
+                    Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-xs">
+                    Unverified
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <div className="text-sm">
+                <Badge variant={selectedUser.enabled ? 'default' : 'destructive'}>
+                  {selectedUser.enabled ? 'Active' : 'Disabled'}
+                </Badge>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Role</Label>
+              <div className="text-sm">{selectedUser.role}</div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Language</Label>
+              <div className="text-sm">{selectedUser.language || 'Not set'}</div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Created</Label>
+              <div className="text-sm">
+                {format(new Date(selectedUser.createdAt), 'PPP')}
+              </div>
+            </div>
+          </div>
+
+          {selectedUser.subscription && (
+            <>
+              <Separator className="my-4" />
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">
+                  Subscription
+                </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Plan</Label>
+                    <div className="text-sm font-medium">
+                      {selectedUser.subscription.plan}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Credits</Label>
+                    <div className="text-sm">
+                      {selectedUser.subscription.creditsBalance} /{' '}
+                      {selectedUser.subscription.monthlyCredits}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Next Renewal
+                    </Label>
+                    <div className="text-sm">
+                      {format(
+                        new Date(selectedUser.subscription.nextRenewalDate),
+                        'PPP'
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Auto Renew
+                    </Label>
+                    <div className="text-sm">
+                      {selectedUser.subscription.autoRenew ? 'Yes' : 'No'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  return (
+    <>
+      <PageHeader title="User Management" />
+      <div className="flex flex-1 h-[calc(100vh-3.5rem)] overflow-hidden">
+        {/* Left - User List */}
+        <div className="w-full md:w-[400px] lg:w-[480px] shrink-0 border-r p-4 overflow-hidden flex flex-col">
             <div className="flex items-center gap-4 mb-4">
               <h3 className="text-lg font-semibold">Users</h3>
               <div className="flex-1 max-w-sm">
@@ -380,178 +542,23 @@ export default function Admin() {
             )}
           </div>
 
-          {/* Right - User Details */}
-          <div className="flex-1 p-4 overflow-auto">
-            {isLoadingDetail ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : selectedUser ? (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={selectedUser.avatarUrl} />
-                        <AvatarFallback>
-                          {getInitials(selectedUser.name || selectedUser.username)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">{selectedUser.name}</CardTitle>
-                        <div className="text-sm text-muted-foreground">
-                          @{selectedUser.username}
-                        </div>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleToggleEnabled}>
-                          {selectedUser.enabled ? (
-                            <>
-                              <UserX className="mr-2 h-4 w-4" />
-                              Disable User
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="mr-2 h-4 w-4" />
-                              Enable User
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        {!selectedUser.emailVerified && (
-                          <DropdownMenuItem onClick={handleVerifyEmail}>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Verify Email
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Change Email
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
-                          <Key className="mr-2 h-4 w-4" />
-                          Reset Password
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setNewPlan((selectedUser.subscription?.plan as 'FREE' | 'PRO' | 'BUSINESS') || 'FREE');
-                            setShowSubscriptionDialog(true);
-                          }}
-                        >
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Change Subscription
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowCreditsDialog(true)}>
-                          <Coins className="mr-2 h-4 w-4" />
-                          Adjust Credits
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Email</Label>
-                      <div className="text-sm flex items-center gap-2">
-                        {selectedUser.email}
-                        {selectedUser.emailVerified ? (
-                          <Badge variant="outline" className="text-xs">
-                            Verified
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">
-                            Unverified
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Status</Label>
-                      <div className="text-sm">
-                        <Badge variant={selectedUser.enabled ? 'default' : 'destructive'}>
-                          {selectedUser.enabled ? 'Active' : 'Disabled'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Role</Label>
-                      <div className="text-sm">{selectedUser.role}</div>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Language</Label>
-                      <div className="text-sm">{selectedUser.language || 'Not set'}</div>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Created</Label>
-                      <div className="text-sm">
-                        {format(new Date(selectedUser.createdAt), 'PPP')}
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedUser.subscription && (
-                    <>
-                      <Separator className="my-4" />
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-2 block">
-                          Subscription
-                        </Label>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Plan</Label>
-                            <div className="text-sm font-medium">
-                              {selectedUser.subscription.plan}
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Credits</Label>
-                            <div className="text-sm">
-                              {selectedUser.subscription.creditsBalance} /{' '}
-                              {selectedUser.subscription.monthlyCredits}
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">
-                              Next Renewal
-                            </Label>
-                            <div className="text-sm">
-                              {format(
-                                new Date(selectedUser.subscription.nextRenewalDate),
-                                'PPP'
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">
-                              Auto Renew
-                            </Label>
-                            <div className="text-sm">
-                              {selectedUser.subscription.autoRenew ? 'Yes' : 'No'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Select a user to view details
-              </div>
-            )}
+          {/* Right - User Details (desktop) */}
+          <div className="hidden md:block flex-1 p-4 overflow-auto">
+            {renderUserDetails()}
           </div>
-        </div>
       </div>
+
+      {/* Mobile User Details Sheet */}
+      <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-auto">
+          <SheetHeader>
+            <SheetTitle>User Details</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            {renderUserDetails()}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
@@ -684,6 +691,6 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

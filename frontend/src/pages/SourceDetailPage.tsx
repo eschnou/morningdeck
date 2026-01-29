@@ -229,19 +229,25 @@ export default function SourceDetailPage() {
               <div className="space-y-3">
                 {/* Email address or URL row */}
                 {source.type === 'EMAIL' && source.emailAddress ? (
-                  <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                    <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <code className="flex-1 text-sm font-mono">{source.emailAddress}</code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(source.emailAddress!);
-                        toast({ title: 'Copied', description: 'Email address copied to clipboard' });
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                      <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <code className="flex-1 text-sm font-mono">{source.emailAddress}</code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(source.emailAddress!);
+                          toast({ title: 'Copied', description: 'Email address copied to clipboard' });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Forward newsletters to this address or add it as a subscription email.
+                      Emails sent to this address will be automatically processed and appear as items below.
+                    </p>
                   </div>
                 ) : source.type === 'REDDIT' ? (
                   <a

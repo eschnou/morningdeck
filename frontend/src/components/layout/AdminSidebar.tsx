@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, ChevronUp, Shield } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Settings, LogOut, ChevronUp, Shield, Users, Newspaper } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { SidebarBriefsList } from './SidebarBriefsList';
 import {
   Sidebar,
   SidebarContent,
@@ -10,6 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarRail,
 } from '@/components/ui/sidebar';
 import {
@@ -21,9 +23,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-export function AppSidebar() {
+export function AdminSidebar() {
   const navigate = useNavigate();
-  const { user, logout, isAdmin } = useAuth();
+  const location = useLocation();
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -39,6 +42,10 @@ export function AppSidebar() {
       .slice(0, 2);
   };
 
+  const adminNavItems = [
+    { label: 'User Management', icon: Users, path: '/admin' },
+  ];
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-14 border-b justify-center">
@@ -47,13 +54,15 @@ export function AppSidebar() {
             <SidebarMenuButton
               size="lg"
               className="cursor-pointer"
-              onClick={() => navigate('/briefs')}
-              tooltip="Morning Deck"
+              onClick={() => navigate('/admin')}
+              tooltip="Admin Panel"
             >
-              <img src="/logo.png" alt="Morning Deck" className="size-8 rounded-lg" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Shield className="size-4" />
+              </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Morning Deck</span>
-                <span className="truncate text-xs text-muted-foreground">News Intelligence</span>
+                <span className="truncate font-semibold">Admin Panel</span>
+                <span className="truncate text-xs text-muted-foreground">Morning Deck</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -61,7 +70,25 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarBriefsList />
+        <SidebarGroup>
+          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminNavItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    isActive={location.pathname === item.path}
+                    onClick={() => navigate(item.path)}
+                    tooltip={item.label}
+                  >
+                    <item.icon className="size-4" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t">
@@ -94,15 +121,11 @@ export function AppSidebar() {
                 align="start"
                 sideOffset={4}
               >
-                {isAdmin && (
-                  <>
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <Shield className="mr-2 size-4" />
-                      Admin Panel
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                <DropdownMenuItem onClick={() => navigate('/briefs')}>
+                  <Newspaper className="mr-2 size-4" />
+                  Back to Briefs
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="mr-2 size-4" />
                   Settings
