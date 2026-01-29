@@ -1,5 +1,7 @@
 package be.transcode.morningdeck.server.provider.ai.model;
 
+import org.springframework.lang.Nullable;
+
 /**
  * Represents a news item extracted from an email by AI.
  *
@@ -10,5 +12,5 @@ package be.transcode.morningdeck.server.provider.ai.model;
 public record ExtractedNewsItem(
         String title,
         String summary,
-        String url
+        @Nullable String url
 ) {}

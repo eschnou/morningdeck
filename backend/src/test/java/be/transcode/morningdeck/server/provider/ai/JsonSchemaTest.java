@@ -12,14 +12,19 @@ import be.transcode.morningdeck.server.provider.ai.model.ScoreResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.lang.Nullable;
 
+import java.lang.reflect.RecordComponent;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -351,6 +356,216 @@ class JsonSchemaTest {
 
             assertThat(parsed).isEqualTo(original);
             assertThat(parsed.items()).hasSize(2);
+        }
+    }
+
+    @Nested
+    @DisplayName("Nullable Field Schema Generation Tests")
+    class NullableFieldSchemaTests {
+
+        /**
+         * Test record with @Nullable field - mirrors ExtractedNewsItem
+         */
+        record TestItemWithNullable(
+                String title,
+                String summary,
+                @Nullable String url
+        ) {}
+
+        /**
+         * Test record without any @Nullable fields
+         */
+        record TestItemAllRequired(
+                String title,
+                String summary,
+                String url
+        ) {}
+
+        /**
+         * Wrapper for list - mirrors ExtractedNewsItemList
+         */
+        record TestItemList(List<TestItemWithNullable> items) {}
+
+        @Test
+        @DisplayName("Should detect @Nullable annotation on record component")
+        void shouldDetectNullableAnnotation() {
+            Set<String> nullableFields = collectNullableFields(TestItemWithNullable.class);
+
+            assertThat(nullableFields).containsExactly("url");
+            assertThat(nullableFields).doesNotContain("title", "summary");
+        }
+
+        @Test
+        @DisplayName("Should return empty set when no @Nullable fields")
+        void shouldReturnEmptySetForNoNullableFields() {
+            Set<String> nullableFields = collectNullableFields(TestItemAllRequired.class);
+
+            assertThat(nullableFields).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should detect @Nullable in nested records via wrapper")
+        void shouldDetectNullableInNestedRecords() {
+            Set<String> nullableFields = collectNullableFields(TestItemList.class);
+
+            assertThat(nullableFields).containsExactly("url");
+        }
+
+        @Test
+        @DisplayName("Should generate schema with nullable type for @Nullable field")
+        void shouldGenerateNullableTypeInSchema() throws JsonProcessingException {
+            String schema = generateOpenAiSchema(TestItemWithNullable.class);
+            JsonNode schemaNode = objectMapper.readTree(schema);
+
+            JsonNode urlType = schemaNode.at("/properties/url/type");
+
+            // Should be ["string", "null"] array, not just "string"
+            assertThat(urlType.isArray()).isTrue();
+            assertThat(urlType.get(0).asText()).isEqualTo("string");
+            assertThat(urlType.get(1).asText()).isEqualTo("null");
+        }
+
+        @Test
+        @DisplayName("Should generate schema with string type for non-nullable field")
+        void shouldGenerateStringTypeForNonNullableField() throws JsonProcessingException {
+            String schema = generateOpenAiSchema(TestItemWithNullable.class);
+            JsonNode schemaNode = objectMapper.readTree(schema);
+
+            JsonNode titleType = schemaNode.at("/properties/title/type");
+            JsonNode summaryType = schemaNode.at("/properties/summary/type");
+
+            // Should be plain "string", not array
+            assertThat(titleType.isTextual()).isTrue();
+            assertThat(titleType.asText()).isEqualTo("string");
+            assertThat(summaryType.isTextual()).isTrue();
+            assertThat(summaryType.asText()).isEqualTo("string");
+        }
+
+        @Test
+        @DisplayName("Should include all fields in required array (OpenAI requirement)")
+        void shouldIncludeAllFieldsInRequiredArray() throws JsonProcessingException {
+            String schema = generateOpenAiSchema(TestItemWithNullable.class);
+            JsonNode schemaNode = objectMapper.readTree(schema);
+
+            JsonNode required = schemaNode.get("required");
+
+            assertThat(required.isArray()).isTrue();
+            List<String> requiredFields = new java.util.ArrayList<>();
+            required.forEach(node -> requiredFields.add(node.asText()));
+            assertThat(requiredFields).containsExactlyInAnyOrder("title", "summary", "url");
+        }
+
+        @Test
+        @DisplayName("Should generate correct schema for ExtractedNewsItemList")
+        void shouldGenerateCorrectSchemaForExtractedNewsItemList() throws JsonProcessingException {
+            String schema = generateOpenAiSchema(ExtractedNewsItemList.class);
+            JsonNode schemaNode = objectMapper.readTree(schema);
+
+            // Navigate to the url field in the nested item schema
+            JsonNode urlType = schemaNode.at("/properties/items/items/properties/url/type");
+
+            // Should be ["string", "null"] array
+            assertThat(urlType.isArray())
+                    .as("url type should be array for nullable field, got: %s", urlType)
+                    .isTrue();
+            assertThat(urlType.get(0).asText()).isEqualTo("string");
+            assertThat(urlType.get(1).asText()).isEqualTo("null");
+        }
+
+        @Test
+        @DisplayName("Should set additionalProperties false on all objects")
+        void shouldSetAdditionalPropertiesFalse() throws JsonProcessingException {
+            String schema = generateOpenAiSchema(TestItemWithNullable.class);
+            JsonNode schemaNode = objectMapper.readTree(schema);
+
+            assertThat(schemaNode.get("additionalProperties").asBoolean()).isFalse();
+        }
+
+        // ========== Helper methods mirroring SpringAiService implementation ==========
+
+        private String generateOpenAiSchema(Class<?> type) throws JsonProcessingException {
+            JsonSchema schema = schemaGenerator.generateSchema(type);
+            String schemaJson = objectMapper.writeValueAsString(schema);
+
+            Set<String> nullableFields = collectNullableFields(type);
+
+            JsonNode schemaNode = objectMapper.readTree(schemaJson);
+            addAdditionalPropertiesFalse(schemaNode, nullableFields);
+
+            return objectMapper.writeValueAsString(schemaNode);
+        }
+
+        private Set<String> collectNullableFields(Class<?> type) {
+            Set<String> nullableFields = new HashSet<>();
+            collectNullableFieldsRecursive(type, nullableFields, new HashSet<>());
+            return nullableFields;
+        }
+
+        private void collectNullableFieldsRecursive(Class<?> type, Set<String> nullableFields, Set<Class<?>> visited) {
+            if (type == null || visited.contains(type) || type.isPrimitive() || type.getName().startsWith("java.lang")) {
+                return;
+            }
+            visited.add(type);
+
+            if (type.isRecord()) {
+                for (RecordComponent component : type.getRecordComponents()) {
+                    if (component.isAnnotationPresent(Nullable.class)) {
+                        nullableFields.add(component.getName());
+                    }
+                    collectNullableFieldsRecursive(component.getType(), nullableFields, visited);
+                    if (component.getGenericType() instanceof java.lang.reflect.ParameterizedType pt) {
+                        for (var arg : pt.getActualTypeArguments()) {
+                            if (arg instanceof Class<?> argClass) {
+                                collectNullableFieldsRecursive(argClass, nullableFields, visited);
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (var field : type.getDeclaredFields()) {
+                if (field.isAnnotationPresent(Nullable.class)) {
+                    nullableFields.add(field.getName());
+                }
+                collectNullableFieldsRecursive(field.getType(), nullableFields, visited);
+            }
+        }
+
+        private void addAdditionalPropertiesFalse(JsonNode node, Set<String> nullableFields) {
+            if (node.isObject()) {
+                ObjectNode objectNode = (ObjectNode) node;
+
+                JsonNode typeNode = objectNode.get("type");
+                JsonNode propertiesNode = objectNode.get("properties");
+                if (typeNode != null && "object".equals(typeNode.asText())) {
+                    objectNode.put("additionalProperties", false);
+
+                    if (propertiesNode != null && propertiesNode.isObject()) {
+                        var requiredArray = objectMapper.createArrayNode();
+                        propertiesNode.fieldNames().forEachRemaining(fieldName -> {
+                            requiredArray.add(fieldName);
+                            if (nullableFields.contains(fieldName)) {
+                                JsonNode propNode = propertiesNode.get(fieldName);
+                                if (propNode.isObject()) {
+                                    ObjectNode propObjectNode = (ObjectNode) propNode;
+                                    JsonNode propTypeNode = propObjectNode.get("type");
+                                    if (propTypeNode != null && propTypeNode.isTextual()) {
+                                        var typeArray = objectMapper.createArrayNode();
+                                        typeArray.add(propTypeNode.asText());
+                                        typeArray.add("null");
+                                        propObjectNode.set("type", typeArray);
+                                    }
+                                }
+                            }
+                        });
+                        objectNode.set("required", requiredArray);
+                    }
+                }
+
+                node.fields().forEachRemaining(entry -> addAdditionalPropertiesFalse(entry.getValue(), nullableFields));
+            } else if (node.isArray()) {
+                node.forEach(child -> addAdditionalPropertiesFalse(child, nullableFields));
+            }
         }
     }
 

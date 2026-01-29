@@ -135,15 +135,15 @@ public class EmailIngestionListener {
             return;
         }
 
-        // Use extracted URL or fallback to mailto: link
+        // Use extracted URL or fallback to mailto: link, truncate to fit column
         String link = item.url() != null && !item.url().isBlank()
-                ? item.url()
+                ? truncate(item.url(), 4096)
                 : "mailto:" + email.getMessageId();
 
         NewsItem newsItem = NewsItem.builder()
                 .source(source)
                 .guid(guid)
-                .title(item.title())
+                .title(truncate(item.title(), 1024))
                 .link(link)
                 .author(email.getFrom())
                 .publishedAt(email.getReceivedDate())
@@ -169,13 +169,13 @@ public class EmailIngestionListener {
         NewsItem newsItem = NewsItem.builder()
                 .source(source)
                 .guid(guid)
-                .title(email.getSubject())
+                .title(truncate(email.getSubject(), 1024))
                 .link("mailto:" + email.getMessageId())
                 .author(email.getFrom())
                 .publishedAt(email.getReceivedDate())
                 .rawContent(email.getContent())
                 .status(NewsItemStatus.ERROR)
-                .errorMessage("AI extraction failed: " + errorMessage)
+                .errorMessage(truncate("AI extraction failed: " + errorMessage, 1024))
                 .build();
 
         newsItemRepository.save(newsItem);
@@ -233,5 +233,13 @@ public class EmailIngestionListener {
         }
 
         return null;
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        log.warn("Truncating value from {} to {} characters", value.length(), maxLength);
+        return value.substring(0, maxLength);
     }
 }

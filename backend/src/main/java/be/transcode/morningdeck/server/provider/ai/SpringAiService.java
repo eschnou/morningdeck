@@ -27,9 +27,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
+import org.springframework.lang.Nullable;
+
 import java.io.IOException;
+import java.lang.reflect.RecordComponent;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Spring AI implementation of the AiService using OpenAI.
@@ -240,6 +245,7 @@ public class SpringAiService implements AiService {
     /**
      * Generates a JSON schema string from the given class using Jackson.
      * Adds additionalProperties: false to all objects as required by OpenAI structured outputs.
+     * Handles @Nullable annotated fields by allowing null values.
      */
     private String generateJsonSchema(Class<?> type) {
         try {
@@ -247,9 +253,12 @@ public class SpringAiService implements AiService {
             JsonSchema schema = schemaGen.generateSchema(type);
             String schemaJson = objectMapper.writeValueAsString(schema);
 
+            // Collect nullable fields from the class hierarchy
+            Set<String> nullableFields = collectNullableFields(type);
+
             // Parse and add additionalProperties: false to all objects
             JsonNode schemaNode = objectMapper.readTree(schemaJson);
-            addAdditionalPropertiesFalse(schemaNode);
+            addAdditionalPropertiesFalse(schemaNode, nullableFields);
 
             return objectMapper.writeValueAsString(schemaNode);
         } catch (JsonProcessingException e) {
@@ -258,10 +267,54 @@ public class SpringAiService implements AiService {
     }
 
     /**
-     * Recursively adds additionalProperties: false and required array to all object types.
-     * Both are required by OpenAI's structured outputs.
+     * Recursively collects field names annotated with @Nullable from a class and its nested types.
      */
-    private void addAdditionalPropertiesFalse(JsonNode node) {
+    private Set<String> collectNullableFields(Class<?> type) {
+        Set<String> nullableFields = new HashSet<>();
+        collectNullableFieldsRecursive(type, nullableFields, new HashSet<>());
+        return nullableFields;
+    }
+
+    private void collectNullableFieldsRecursive(Class<?> type, Set<String> nullableFields, Set<Class<?>> visited) {
+        if (type == null || visited.contains(type) || type.isPrimitive() || type.getName().startsWith("java.lang")) {
+            return;
+        }
+        visited.add(type);
+
+        // Handle records
+        if (type.isRecord()) {
+            for (RecordComponent component : type.getRecordComponents()) {
+                if (component.isAnnotationPresent(Nullable.class)) {
+                    nullableFields.add(component.getName());
+                }
+                // Recurse into component types (for nested records/objects)
+                collectNullableFieldsRecursive(component.getType(), nullableFields, visited);
+                // Handle generic types like List<ExtractedNewsItem>
+                if (component.getGenericType() instanceof java.lang.reflect.ParameterizedType pt) {
+                    for (var arg : pt.getActualTypeArguments()) {
+                        if (arg instanceof Class<?> argClass) {
+                            collectNullableFieldsRecursive(argClass, nullableFields, visited);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle regular classes
+        for (var field : type.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Nullable.class)) {
+                nullableFields.add(field.getName());
+            }
+            collectNullableFieldsRecursive(field.getType(), nullableFields, visited);
+        }
+    }
+
+    /**
+     * Recursively adds additionalProperties: false and required array to all object types.
+     * Also handles @Nullable fields by allowing null values in their type.
+     * Both additionalProperties: false and required array are required by OpenAI's structured outputs.
+     */
+    private void addAdditionalPropertiesFalse(JsonNode node, Set<String> nullableFields) {
         if (node.isObject()) {
             ObjectNode objectNode = (ObjectNode) node;
 
@@ -271,18 +324,35 @@ public class SpringAiService implements AiService {
             if (typeNode != null && "object".equals(typeNode.asText())) {
                 objectNode.put("additionalProperties", false);
 
-                // Add required array with all property names
+                // Process properties and handle nullable fields
                 if (propertiesNode != null && propertiesNode.isObject()) {
                     var requiredArray = objectMapper.createArrayNode();
-                    propertiesNode.fieldNames().forEachRemaining(requiredArray::add);
+                    propertiesNode.fieldNames().forEachRemaining(fieldName -> {
+                        requiredArray.add(fieldName);
+                        // Make nullable fields allow null in their type
+                        if (nullableFields.contains(fieldName)) {
+                            JsonNode propNode = propertiesNode.get(fieldName);
+                            if (propNode.isObject()) {
+                                ObjectNode propObjectNode = (ObjectNode) propNode;
+                                JsonNode propTypeNode = propObjectNode.get("type");
+                                if (propTypeNode != null && propTypeNode.isTextual()) {
+                                    // Change "type": "string" to "type": ["string", "null"]
+                                    var typeArray = objectMapper.createArrayNode();
+                                    typeArray.add(propTypeNode.asText());
+                                    typeArray.add("null");
+                                    propObjectNode.set("type", typeArray);
+                                }
+                            }
+                        }
+                    });
                     objectNode.set("required", requiredArray);
                 }
             }
 
             // Recurse into all child nodes
-            node.fields().forEachRemaining(entry -> addAdditionalPropertiesFalse(entry.getValue()));
+            node.fields().forEachRemaining(entry -> addAdditionalPropertiesFalse(entry.getValue(), nullableFields));
         } else if (node.isArray()) {
-            node.forEach(this::addAdditionalPropertiesFalse);
+            node.forEach(child -> addAdditionalPropertiesFalse(child, nullableFields));
         }
     }
 

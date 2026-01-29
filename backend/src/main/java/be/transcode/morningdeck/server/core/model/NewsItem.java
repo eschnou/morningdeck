@@ -33,7 +33,7 @@ public class NewsItem {
     @Column(nullable = false, length = 1024)
     private String title;
 
-    @Column(nullable = false, length = 2048)
+    @Column(nullable = false, length = 4096)
     private String link;
 
     @Column
