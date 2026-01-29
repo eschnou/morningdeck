@@ -12,7 +12,6 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
-  SidebarRail,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -47,7 +46,7 @@ export function AdminSidebar() {
   ];
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="none">
       <SidebarHeader className="h-14 border-b justify-center">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -140,8 +139,6 @@ export function AdminSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   );
 }
