@@ -51,7 +51,8 @@ public interface SourceRepository extends JpaRepository<Source, UUID> {
     // Feed queue scheduling queries
     @Query("""
         SELECT s FROM Source s
-        WHERE s.status = be.transcode.morningdeck.server.core.model.SourceStatus.ACTIVE
+        WHERE s.status IN (be.transcode.morningdeck.server.core.model.SourceStatus.ACTIVE,
+                           be.transcode.morningdeck.server.core.model.SourceStatus.ERROR)
           AND s.fetchStatus = be.transcode.morningdeck.server.core.model.FetchStatus.IDLE
           AND (s.lastFetchedAt IS NULL OR s.lastFetchedAt < :cutoff)
         ORDER BY s.lastFetchedAt ASC NULLS FIRST

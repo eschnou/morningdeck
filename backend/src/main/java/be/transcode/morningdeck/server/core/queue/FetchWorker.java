@@ -44,10 +44,9 @@ public class FetchWorker {
             return;
         }
 
-        // Skip if source is not in expected state
-        if (source.getStatus() != SourceStatus.ACTIVE) {
-            log.debug("Skipping non-active source: source_id={} status={}",
-                    sourceId, source.getStatus());
+        // Skip if source is paused
+        if (source.getStatus() == SourceStatus.PAUSED) {
+            log.debug("Skipping paused source: source_id={}", sourceId);
             resetToIdle(source);
             return;
         }
