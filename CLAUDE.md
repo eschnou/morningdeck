@@ -80,6 +80,7 @@ The app will be available at http://localhost:8080. See `.env.selfhost.example` 
 ### Steering Documents
 The `./specs` folder contains steering documents for the project:
 - `./specs/product.md` - Business-level overview of the application
+- `./specs/index.md` - Index of all feature specs
 
 ### Spec-Driven Development
 For each new major feature, create a new folder in `./specs` containing:
