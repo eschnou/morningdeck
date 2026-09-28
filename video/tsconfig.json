@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@/lib/api": [
+        "./src/mocks/api.ts"
+      ],
+      "@/components/ui/sheet": [
+        "./src/mocks/sheet.tsx"
+      ],
+      "@/*": [
+        "../frontend/src/*"
+      ],
+      "react": [
+        "../frontend/node_modules/@types/react"
+      ],
+      "react/*": [
+        "../frontend/node_modules/@types/react/*"
+      ],
+      "react-dom": [
+        "../frontend/node_modules/@types/react-dom"
+      ],
+      "csstype": [
+        "../frontend/node_modules/csstype"
+      ],
+      "react-router-dom": [
+        "../frontend/node_modules/react-router-dom"
+      ],
+      "date-fns": [
+        "../frontend/node_modules/date-fns"
+      ],
+      "lucide-react": [
+        "../frontend/node_modules/lucide-react"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "remotion.config.ts"
+  ]
+}

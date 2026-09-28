@@ -1,0 +1,10 @@
+/* Video-only layout fixes for app components rendered inside a scaled "browser window". */
+.app-surface {
+  -webkit-font-smoothing: antialiased;
+}
+.app-window .h-svh {
+  height: 100% !important;
+}
+.app-window .min-h-svh {
+  min-height: 100% !important;
+}
